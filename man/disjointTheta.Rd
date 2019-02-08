@@ -4,8 +4,10 @@
 \name{disjointTheta}
 \alias{disjointTheta}
 \title{A set of \eqn{\Theta} values that have a bimodal distribution for testing}
+\usage{
+data(disjointTheta)
+}
 \description{
 A set of \eqn{\Theta} values that have a bimodal distribution for testing
 }
 \keyword{data}
-

@@ -60,7 +60,7 @@ p1 <- ggplot(data = as.data.frame(results[[1]]$stats)) +
 p2 <- ggplot(data = as.data.frame(results[[1]]$stats)) +
     geom_line(mapping = aes(x = theta, y = Bias.g), color = "black", linetype = "solid") +
     geom_line(mapping = aes(x = simData$theta, y = simData$Bias), color = "red", linetype = "dashed") +
-    labs(x = expression(theta), y = "Std. Dev")
+    labs(x = expression(theta), y = "Bias")
 plot_grid(plotlist = list(p1, p2), ncol = 2)
 
 ## ------------------------------------------------------------------------
@@ -81,14 +81,10 @@ ggplot() +
     labs(x = expression(log(theta)), y = expression(g(theta)))
 
 ## ------------------------------------------------------------------------
-print(result$R)
+print(result$S)
 
 ## ------------------------------------------------------------------------
-gt <- stats[, "g"] / (1 - exp(-tau))
-gt <- gt / sum(gt)
-
-## ------------------------------------------------------------------------
-d <- data.frame(lambda = lambda, g = stats[, "g"], SE.g = stats[, "SE.g"])
+d <- data.frame(lambda = lambda, g = stats[, "g"], tg = stats[, "tg"], SE.g = stats[, "SE.g"])
 indices <- seq(1, length(lambda), 5)
 ggplot(data = d) +
     geom_line(mapping = aes(x = lambda, y = g)) +
@@ -97,10 +93,10 @@ ggplot(data = d) +
                   width = .01, color = "blue") +
     labs(x = expression(log(theta)), y = expression(g(theta))) +
     ylim(0, 0.006) +
-    geom_line(mapping = aes(x = lambda, y = gt), linetype = "dashed", color = "red")
+    geom_line(mapping = aes(x = lambda, y = tg), linetype = "dashed", color = "red")
 
 ## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
-gPost <- sapply(seq_len(100), function(i) local({gt <- gt * result$P[i, ]; gt / sum(gt)}))
+gPost <- sapply(seq_len(100), function(i) local({tg <- d$tg * result$P[i, ]; tg / sum(tg)}))
 plots <- lapply(c(1, 2, 4, 8), function(i) {
     ggplot() +
         geom_line(mapping = aes(x = tau, y = gPost[, i])) +
@@ -266,17 +262,7 @@ plot_grid(plotlist = list(p1, p2), ncol = 2)
 
 ## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
 tau <- seq(from = -4, to = 6, by = 0.2)
-plots1 <- lapply(2:7,
-                 function(p) {
-                     result <- deconv(tau = tau, X = z, family = "Normal", pDegree = p)
-                     g <- result$stats[, "g"]
-                     ggplot(mapping = aes(x = z)) +
-                         geom_histogram(mapping = aes(y = ..count.. / sum(..count..)),
-                                        color = "brown", bins = 60, alpha = 0.2) +
-                         geom_line(mapping = aes(x = tau, y = g), color = "blue") +
-                         labs(x = "z", y = "Density", title = sprintf("DF = %d", p))
-                 })
-plots2 <- lapply(2:7,
+plots1 <- lapply(2:8,
                  function(p) {
                      result <- deconv(tau = tau, X = z, family = "Normal", pDegree = p)
                      g <- result$stats[, "g"]
@@ -287,22 +273,9 @@ plots2 <- lapply(2:7,
                          labs(x = expression(theta), y = "Density",
                               title = sprintf("DF = %d", p))
                 })
-plots <- mapply(function(x, y) list(x, y), plots1, plots2)
-plot_grid(plotlist = plots, ncol=2)
 
 ## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
-plots1 <- lapply(c(0.5, 1, 2, 4, 16, 32),
-                 function(c0) {
-                     result <- deconv(tau = tau, X = z, family = "Normal", pDegree = 6,
-                                      c0 = c0)
-                     g <- result$stats[, "g"]
-                     ggplot(mapping = aes(x = z)) +
-                         geom_histogram(mapping = aes(y = ..count.. / sum(..count..)),
-                                        color = "brown", bins = 60, alpha = 0.2) +
-                         geom_line(mapping = aes(x = tau, y = g), color = "blue") +
-                         labs(x = "z", y = "Density", title = sprintf("C0 = %.1f", c0))
-                 })
-plots2 <- lapply(c(0.5, 1, 2, 4, 16, 32),
+plots2 <- lapply(c(0.5, 1, 2, 4, 8, 16, 32),
                  function(c0) {
                      result <- deconv(tau = tau, X = z, family = "Normal", pDegree = 6,
                                       c0 = c0)
@@ -316,6 +289,16 @@ plots2 <- lapply(c(0.5, 1, 2, 4, 16, 32),
                 })
 plots <- mapply(function(x, y) list(x, y), plots1, plots2)
 plot_grid(plotlist = plots, ncol = 2)
+
+## ------------------------------------------------------------------------
+c0_values <- c(.5, 1, 2, 4, 8, 16, 32)
+stable <- data.frame(
+    c0 = c0_values,
+    `DF 5` = sapply(c0_values, function(c0) deconv(tau = tau, X = z, family = "Normal", pDegree = 5, c0 = c0)$S),
+    `DF 6` = sapply(c0_values, function(c0) deconv(tau = tau, X = z, family = "Normal", pDegree = 6, c0 = c0)$S),
+    `DF 7` = sapply(c0_values, function(c0) deconv(tau = tau, X = z, family = "Normal", pDegree = 7, c0 = c0)$S)
+)
+knitr::kable(stable)
 
 ## ------------------------------------------------------------------------
 tau <- seq(from = 0.01, to = 0.99, by = 0.01)
@@ -332,6 +315,41 @@ ggplot() +
 
 ## ------------------------------------------------------------------------
 knitr::kable(d[indices, ], row.names = FALSE)
+
+## ------------------------------------------------------------------------
+cat(sprintf("Mass below .20 = %0.2f\n", sum(d[1:20, "g"])))
+cat(sprintf("Mass above .80 = %0.2f\n", sum(d[80:99, "g"])))
+
+## ------------------------------------------------------------------------
+theta <- result$stats[, 'theta']
+gTheta <- result$stats[, 'g']
+
+f_alpha <- function(n_k, x_k) {
+    ## .01 is the delta_theta in the Riemann sum
+    sum(dbinom(x = x_k, size = n_k, prob = theta) * gTheta) * .01
+}
+
+g_theta_hat <- function(n_k, x_k) {
+    gTheta * dbinom(x = x_k, size = n_k, prob = theta) / f_alpha(n_k, x_k)
+}
+
+## ------------------------------------------------------------------------
+g1 <- g_theta_hat(x_k = 7, n_k = 32)
+g2 <- g_theta_hat(x_k = 3, n_k = 6)
+g3 <- g_theta_hat(x_k = 17, n_k = 18)
+
+ggplot() +
+    geom_line(mapping = aes(x = theta, y = g1), col = "magenta") +
+    ylim(0, 10) +
+    geom_line(mapping = aes(x = theta, y = g2), col = "red") +
+    geom_line(mapping = aes(x = theta, y = g3), col = "blue") +
+    labs(x = expression(theta), y = expression(g(paste(theta, "|(x, n)")))) +
+    annotate("text", x = 0.15, y = 4.25, label = "x=7, n=32") +
+    annotate("text", x = 0.425, y = 4.25, label = "x=3, n=6") +
+    annotate("text", x = 0.85, y = 7.5, label = "x=17, n=18") 
+
+## ------------------------------------------------------------------------
+cat(sprintf("Empirical Bayes Estimate: %f\n", 0.01 * sum(theta * g2)))
 
 ## ------------------------------------------------------------------------
 set.seed(32776)

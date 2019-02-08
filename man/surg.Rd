@@ -6,6 +6,9 @@
 \title{Intestinal surgery data involving 844 cancer patients. The data consists of
 pairs (\eqn{n_i}, \eqn{s_i}) where \eqn{n_i} is the number of satellites removed
 and \eqn{s_i} is the number of satellites found to be malignant.}
+\usage{
+data(surg)
+}
 \description{
 Intestinal surgery data involving 844 cancer patients. The data consists of
 pairs (\eqn{n_i}, \eqn{s_i}) where \eqn{n_i} is the number of satellites removed
@@ -17,4 +20,3 @@ Gastric Cancer Resection: An Analysis from the US Gastric Cancer Collaborative.
 J Am Coll Surg. 2015 Aug;221(2):291-9. doi: 10.1016/j.jamcollsurg.2015.04.024.
 }
 \keyword{data}
-
