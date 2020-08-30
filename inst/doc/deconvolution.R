@@ -1,4 +1,4 @@
-## ----echo=FALSE----------------------------------------------------------
+## ----echo=FALSE---------------------------------------------------------------
 knitr::opts_chunk$set(
     message = FALSE,
     warning = FALSE,
@@ -7,23 +7,23 @@ knitr::opts_chunk$set(
     cache = FALSE
 )
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(238923) ## for reproducibility
 N <- 1000
 Theta <- rchisq(N,  df = 10)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 nSIM <- 1000
 data <- sapply(seq_len(nSIM), function(x) rpois(n = N, lambda = Theta))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 library(deconvolveR)
 tau <- seq(1, 32)
 results <- apply(data, 2,
                  function(x) deconv(tau = tau, X = x, ignoreZero = FALSE,
                                     c0 = 1))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 g <- sapply(results, function(x) x$stats[, "g"])
 mean <- apply(g, 1, mean)
 SE.g <- sapply(results, function(x) x$stats[, "SE.g"])
@@ -41,10 +41,10 @@ table1 <- transform(simData,
                     StdDev = 100 * StdDev,
                     Bias = 100 * Bias)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 knitr::kable(table1[c(5, 10, 15, 20, 25), ], row.names=FALSE)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 library(ggplot2)
 library(cowplot)
 theme_set(theme_get() +
@@ -63,27 +63,27 @@ p2 <- ggplot(data = as.data.frame(results[[1]]$stats)) +
     labs(x = expression(theta), y = "Bias")
 plot_grid(plotlist = list(p1, p2), ncol = 2)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 data(bardWordCount)
 str(bardWordCount)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 lambda <- seq(-4, 4.5, .025)
 tau <- exp(lambda)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 result <- deconv(tau = tau, y = bardWordCount, n = 100, c0=2)
 stats <- result$stats
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ggplot() +
     geom_line(mapping = aes(x = lambda, y = stats[, "g"])) +
     labs(x = expression(log(theta)), y = expression(g(theta)))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 print(result$S)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 d <- data.frame(lambda = lambda, g = stats[, "g"], tg = stats[, "tg"], SE.g = stats[, "SE.g"])
 indices <- seq(1, length(lambda), 5)
 ggplot(data = d) +
@@ -95,7 +95,7 @@ ggplot(data = d) +
     ylim(0, 0.006) +
     geom_line(mapping = aes(x = lambda, y = tg), linetype = "dashed", color = "red")
 
-## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
+## ---- fig.keep='all', fig.width=7.5, fig.height=10----------------------------
 gPost <- sapply(seq_len(100), function(i) local({tg <- d$tg * result$P[i, ]; tg / sum(tg)}))
 plots <- lapply(c(1, 2, 4, 8), function(i) {
     ggplot() +
@@ -106,7 +106,7 @@ plots <- lapply(c(1, 2, 4, 8), function(i) {
 plots <- Map(f = function(p, xlim) p + xlim(0, xlim), plots, list(6, 8, 14, 20))
 plot_grid(plotlist = plots, ncol = 2)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(1783)
 B <- 200
 fHat <- as.numeric(result$P %*% d$g)
@@ -128,7 +128,7 @@ ggplot(data = d) +
     labs(x = expression(log(theta)), y = expression(sigma(hat(g))))
 
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 gHat <- stats[, "g"]
 Rfn <- function(t) {
     sum( gHat * (1 - exp(-tau * t)) / (exp(tau) - 1) )
@@ -138,10 +138,10 @@ ggplot() +
     geom_line(mapping = aes(x = 0:10, y = r)) +
     labs(x = "time multiple t", y = expression(R(t)))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 print(uniroot(f = function(x) Rfn(x) - 1, interval = c(2, 4))$root)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(129023)
 N <- 10000
 pi0 <- .90
@@ -159,7 +159,7 @@ data <- local({
     data.frame(nullCase = nullCase, mu = muAndZ[, 1], z = muAndZ[, 2])
 })
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 p1 <- ggplot(mapping = aes(x = data$z)) +
     geom_histogram(mapping = aes(y  = ..count.. / sum(..count..) ),
                    color = "brown", bins = 60, alpha = 0.5) +
@@ -170,15 +170,15 @@ p2 <- ggplot(mapping = aes(x = data$mu)) +
     labs(x = expression(theta), y = "Density")
 plot_grid(plotlist = list(p1, p2), ncol = 2)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 tau <- seq(from = -6, to = 3, by = 0.25)
 atomIndex <- which(tau == 0)
 result <- deconv(tau = tau, X = data$z, deltaAt = 0, family = "Normal", pDegree = 5)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 knitr::kable(result$stats)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 gData <- as.data.frame(result$stats[-atomIndex, c("theta", "g")])
 gData$g <- gData$g / sum(gData$g)
 ggplot(data = gData) +
@@ -187,12 +187,12 @@ ggplot(data = gData) +
                             color = "red") +
     labs(x = expression(theta), y = expression(g(theta)))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 p <- pnorm(data$z)
 orderP <- order(p)
 p <- p[orderP]
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## FCR
 q <- 0.05
 R <- max(which(p <= seq_len(N) * q / N))
@@ -201,7 +201,7 @@ disc <- data[discIdx, ]
 cat("BY_q procedure discoveries", R, "cases,", sum(disc$nullCase),
     "actual nulls among them.\n")
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 alphaR <- 1 - R * q / N
 zAlpha <- qnorm(alphaR, lower.tail = FALSE)
 zMarker <- max(disc$z)
@@ -212,7 +212,7 @@ BY.up <- c(xlim[1] + zAlpha, xlim[2] + zAlpha)
 Bayes.lo <- c(0.5 * (xlim[1] - 3) - 1.96 / sqrt(2), 0.5 * (xlim[2] - 3) - 1.96 / sqrt(2))
 Bayes.up <- c(0.5 * (xlim[1] - 3) + 1.96 / sqrt(2), 0.5 * (xlim[2] - 3) + 1.96 / sqrt(2))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 d <- data[order(data$mu), ]
 muVals <- unique(d$mu)
 s <- as.data.frame(result$stats)
@@ -224,7 +224,7 @@ g2 <- apply(gMuPhi, 2, function(x) cumsum(x)/sum(x))
 pct <- apply(g2, 2, function(dist) approx(y = muVals, x = dist, xout = c(0.025, 0.975)))
 qVals <- sapply(pct, function(item) item$y)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ggplot() +
     geom_line(mapping = aes(x = xlim, y = BY.lo), color = "blue") +
     geom_line(mapping = aes(x = xlim, y = BY.up), color = "blue") +
@@ -247,7 +247,7 @@ ggplot() +
     annotate("text", x = -2.0, y = -3.9, label = "EB.up") +
     annotate("text", x = zMarker, y = 1.25, label = as.character(round(zMarker, 2)))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 p1 <- ggplot(mapping = aes(x = disjointTheta)) +
     geom_histogram(mapping = aes(y  = ..count.. / sum(..count..) ),
                    color = "brown", bins = 60, alpha = 0.5) +
@@ -260,7 +260,7 @@ p2 <- ggplot(mapping = aes(x = z)) +
     labs(x = "z", y = "Density")
 plot_grid(plotlist = list(p1, p2), ncol = 2)
 
-## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
+## ---- fig.keep='all', fig.width=7.5, fig.height=10----------------------------
 tau <- seq(from = -4, to = 6, by = 0.2)
 plots1 <- lapply(2:8,
                  function(p) {
@@ -274,7 +274,7 @@ plots1 <- lapply(2:8,
                               title = sprintf("DF = %d", p))
                 })
 
-## ---- fig.keep='all', fig.width=7.5, fig.height=10-----------------------
+## ---- fig.keep='all', fig.width=7.5, fig.height=10----------------------------
 plots2 <- lapply(c(0.5, 1, 2, 4, 8, 16, 32),
                  function(c0) {
                      result <- deconv(tau = tau, X = z, family = "Normal", pDegree = 6,
@@ -290,7 +290,7 @@ plots2 <- lapply(c(0.5, 1, 2, 4, 8, 16, 32),
 plots <- mapply(function(x, y) list(x, y), plots1, plots2)
 plot_grid(plotlist = plots, ncol = 2)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 c0_values <- c(.5, 1, 2, 4, 8, 16, 32)
 stable <- data.frame(
     c0 = c0_values,
@@ -300,7 +300,7 @@ stable <- data.frame(
 )
 knitr::kable(stable)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 tau <- seq(from = 0.01, to = 0.99, by = 0.01)
 result <- deconv(tau = tau, X = surg, family = "Binomial", c0 = 1)
 d <- data.frame(result$stats)
@@ -313,14 +313,14 @@ ggplot() +
                   width = .01, color = "blue") +
     labs(x = expression(theta), y = expression(paste(g(theta), " +/- SE")))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 knitr::kable(d[indices, ], row.names = FALSE)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 cat(sprintf("Mass below .20 = %0.2f\n", sum(d[1:20, "g"])))
 cat(sprintf("Mass above .80 = %0.2f\n", sum(d[80:99, "g"])))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 theta <- result$stats[, 'theta']
 gTheta <- result$stats[, 'g']
 
@@ -333,7 +333,7 @@ g_theta_hat <- function(n_k, x_k) {
     gTheta * dbinom(x = x_k, size = n_k, prob = theta) / f_alpha(n_k, x_k)
 }
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 g1 <- g_theta_hat(x_k = 7, n_k = 32)
 g2 <- g_theta_hat(x_k = 3, n_k = 6)
 g3 <- g_theta_hat(x_k = 17, n_k = 18)
@@ -348,10 +348,10 @@ ggplot() +
     annotate("text", x = 0.425, y = 4.25, label = "x=3, n=6") +
     annotate("text", x = 0.85, y = 7.5, label = "x=17, n=18") 
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 cat(sprintf("Empirical Bayes Estimate: %f\n", 0.01 * sum(theta * g2)))
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 set.seed(32776)
 B <- 1000
 gHat <- d$g
@@ -386,6 +386,6 @@ table2 <- data.frame(theta = tau,
                      BiasSimul = round(apply(BiasBoot, 1, mean) * 100, 3))[ indices, ]
 
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 knitr::kable(table2, row.names = FALSE)
 
